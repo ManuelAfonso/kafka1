@@ -1,0 +1,15 @@
+Demo
+
+Mostrar o programa tradicional - monolito
+Passagem para microserviços
+-> podiam chamar-se uns aos outros, porque não fazem isso?
+-> o serviço de entrada deixa de controlar quem usa as mensagens
+-> e não tem que esperar que tudo aconteça
+
+Fazer demo dos projetos
+-> tópicos (producer / consumer) - para que servem
+-> grupos (consumer) - para que servem
+
+Mostrar o que acontecia se shipping e finance usassem o mesmo grupo
+
+Abrir várais instâncias de cada e ver o que acontece (aqui é melhor ativar o ciclo)
