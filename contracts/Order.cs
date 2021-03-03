@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace contracts
+﻿namespace contracts
 {
     public class Order
     {
@@ -10,5 +7,6 @@ namespace contracts
         public int ProductId { get; set; }
         public OrderStatus Status { get; set; }
         public string FinanceId { get; set; }
+        public string TrackingCode { get; set; }
     }
 }

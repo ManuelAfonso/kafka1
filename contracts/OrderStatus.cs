@@ -4,7 +4,6 @@
     {
         None = 0,
         Created = 1,
-        Validated = 2,
-        Shipped = 3
+        Validated = 2
     }
 }

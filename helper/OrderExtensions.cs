@@ -40,12 +40,10 @@ namespace helper
 
         public static void Ship(this Order order)
         {
-            var trackingCode = fixture.Create<string>();
-
-            order.Status = OrderStatus.Shipped;
+            order.TrackingCode = fixture.Create<string>();
             order.UpdateOrder();
-            order.AddEvent($"shipped with tracking code {trackingCode}");
-            Console.WriteLine($"Order {order.OrderId} was shipped with tracking code {trackingCode}");
+            order.AddEvent($"shipped with tracking code {order.TrackingCode}");
+            Console.WriteLine($"Order {order.OrderId} was shipped with tracking code {order.TrackingCode}");
         }
 
         public static void SendToERP(this Order order)
@@ -54,6 +52,16 @@ namespace helper
             order.UpdateOrder();
             order.AddEvent($"sentToERP with id {order.FinanceId}");
             Console.WriteLine($"Order {order.OrderId} sent to ERP with id {order.FinanceId}");
+        }
+
+        public static OrderMessage CreateMessage(this Order order, string topic)
+        {
+            return new OrderMessage
+            {
+                Id = fixture.Create<string>(),
+                Order = order,
+                Topic = topic
+            };
         }
 
         private static void AddEvent(this Order order, string description)
@@ -72,25 +80,33 @@ namespace helper
 
         private static void UpdateOrder(this Order order)
         {
+            UpdateFileWithLock(
+                Path.Combine(@"C:\Temp\kafka1", $"order-{order.OrderId}.json"),
+                text =>
+                {
+                    var orderFromStorage = JsonSerializer.Deserialize<Order>(text);
+                    orderFromStorage.TrackingCode = order.TrackingCode ?? orderFromStorage.TrackingCode;
+                    orderFromStorage.FinanceId = order.FinanceId ?? orderFromStorage.FinanceId;
+                    return JsonSerializer.Serialize(orderFromStorage);
+                });
+        }
+
+        private static void UpdateFileWithLock(string path, Func<string, string> contentModifier)
+        {
             int tries = 5;
             while (tries-- > 0)
             {
                 try
                 {
-                    using (var fs = File.Open(Path.Combine(@"C:\Temp\kafka1", $"order-{order.OrderId}.json"),
-                        FileMode.Open,
-                        FileAccess.ReadWrite,
-                        FileShare.None))
+                    using (var fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
                     {
                         byte[] data = new byte[fs.Length];
                         fs.Read(data);
-                        var orderS = JsonSerializer.Deserialize<Order>(Encoding.UTF8.GetString(data));
 
-                        orderS.Status = order.Status;
-                        orderS.FinanceId = order.FinanceId ?? orderS.FinanceId;
-                        
+                        var newText = contentModifier(Encoding.UTF8.GetString(data));
+
                         fs.SetLength(0);
-                        fs.Write(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(orderS)));
+                        fs.Write(Encoding.UTF8.GetBytes(newText));
                         break;
                     }
                 }
@@ -102,7 +118,7 @@ namespace helper
 
             if (tries < 0)
             {
-                Console.WriteLine($"Unable to update status on Order {order.OrderId}");
+                Console.WriteLine($"Unable to update file {path}");
             }
         }
     }

@@ -1,5 +1,7 @@
 ﻿using Confluent.Kafka;
 
+using contracts;
+
 using System;
 using System.Text;
 using System.Text.Json;
@@ -11,27 +13,27 @@ namespace helper
     {
         private static readonly string Server = "localhost:9092";
 
-        public static void Produce<T>(string topicName, T data)
+        public static void Produce(OrderMessage message)
         {
             var config = new ProducerConfig
             {
                 BootstrapServers = Server
             };
 
-            Action<DeliveryReport<Null, T>> handler = r =>
+            Action<DeliveryReport<string, OrderMessage>> handler = r =>
                 Console.WriteLine(!r.Error.IsError
                     ? $"Delivered message to {r.TopicPartitionOffset} on topic {r.TopicPartition}"
                     : $"Delivery Error: {r.Error.Reason}");
 
-            using var p = new ProducerBuilder<Null, T>(config).SetValueSerializer(new Serializer<T>()).Build();
+            using var p = new ProducerBuilder<string, OrderMessage>(config).SetValueSerializer(new Serializer<OrderMessage>()).Build();
             p.Produce(
-                topicName,
-                new Message<Null, T> { Value = data },
+                message.Topic,
+                new Message<string, OrderMessage> { Key = message.Id, Value = message },
                 handler);
             p.Flush(TimeSpan.FromSeconds(10));
         }
 
-        public static void Consume<T>(string groupName, string topicName, Action<T> processor)
+        public static void Consume(string groupName, string topicName, Action<OrderMessage> processor)
         {
             var conf = new ConsumerConfig
             {
@@ -45,7 +47,7 @@ namespace helper
                 AutoOffsetReset = AutoOffsetReset.Earliest
             };
 
-            using var c = new ConsumerBuilder<Ignore, T>(conf).SetValueDeserializer(new Deserializer<T>()).Build();
+            using var c = new ConsumerBuilder<Ignore, OrderMessage>(conf).SetValueDeserializer(new Deserializer<OrderMessage>()).Build();
 
             c.Subscribe(topicName);
 

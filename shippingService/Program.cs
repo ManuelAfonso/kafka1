@@ -15,16 +15,17 @@ namespace shippingService
             Console.WriteLine("Starting order shipping service in 11 seconds...");
             Thread.Sleep(11000);
 
-            KafkaHelper.Consume<Order>("GROUP-SHIPPING", Topics.OrderValidated, Process);
+            KafkaHelper.Consume("GROUP-SHIPPING", Topics.OrderValidated, Process);
             //KafkaHelper.Consume<Order>("GROUP-FOR-ALL", Topics.OrderValidated, Process);
-
         }
 
-        private static void Process(Order order)
+        private static void Process(OrderMessage orderMessage)
         {
             try
             {
-                order.Ship();
+                Console.WriteLine($"Processing order {orderMessage.Order.OrderId}");
+                orderMessage.Order.Ship();
+                KafkaHelper.Produce(orderMessage.Order.CreateMessage(Topics.OrderShipped));
             }
             catch (Exception ex)
             {

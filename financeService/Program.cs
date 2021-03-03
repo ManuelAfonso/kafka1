@@ -15,15 +15,17 @@ namespace shippingService
             Console.WriteLine("Starting order finance service in 9 seconds...");
             Thread.Sleep(9000);
 
-            KafkaHelper.Consume<Order>("GROUP-FINANCE", Topics.OrderValidated, Process);
+            KafkaHelper.Consume("GROUP-FINANCE", Topics.OrderValidated, Process);
             //KafkaHelper.Consume<Order>("GROUP-FOR-ALL", Topics.OrderValidated, Process);
         }
 
-        private static void Process(Order order)
+        private static void Process(OrderMessage orderMessage)
         {
             try
             {
-                order.SendToERP();
+                Console.WriteLine($"Processing order {orderMessage.Order.OrderId}");
+                orderMessage.Order.SendToERP();
+                KafkaHelper.Produce(orderMessage.Order.CreateMessage(Topics.OrderSentToERP));
             }
             catch (Exception ex)
             {

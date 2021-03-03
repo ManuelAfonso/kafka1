@@ -11,29 +11,45 @@ namespace createService
     {
         static void Main(string[] args)
         {
+            Console.WriteLine("createService starting");
             //while (true)
             {
-                Metodo2();
+                UsingKafka();
 
                 Thread.Sleep(5000);
             }
+            Console.WriteLine("createService stopping");
         }
 
-        static void Metodo1()
+        static void Normal()
         {
-            var order = OrderExtensions.Create();
+            try
+            {
+                var order = OrderExtensions.Create();
 
-            order.Validate();
+                order.Validate();
 
-            order.Ship();
+                order.Ship();
 
-            order.SendToERP();
+                order.SendToERP();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
 
-        static void Metodo2()
+        static void UsingKafka()
         {
-            var order = OrderExtensions.Create();
-            KafkaHelper.Produce(Topics.OrderCreated, order);
+            try
+            {
+                var order = OrderExtensions.Create();
+                KafkaHelper.Produce(order.CreateMessage(Topics.OrderCreated));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
